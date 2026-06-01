@@ -2,8 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initObservers();
   initCrossword();
   initScrollSpy();
-  initInkTimeline();
-  initDaVinciMap();
+  initPressureGauge();
   initRailToggle();
 });
 
@@ -72,9 +71,35 @@ function initObservers() {
           entry.target.classList.add('visible');
         }
         if (entry.target.classList.contains('typewriter-classic')) {
-          entry.target.style.animation = 'none';
-          entry.target.offsetHeight; /* trigger reflow */
-          entry.target.style.animation = null; 
+          if (!entry.target.hasAttribute('data-typed')) {
+            entry.target.setAttribute('data-typed', 'true');
+            
+            // Lấy text hiện tại và làm sạch
+            let originalText = entry.target.getAttribute('data-text');
+            if (!originalText) {
+              originalText = entry.target.textContent.trim();
+              entry.target.setAttribute('data-text', originalText);
+            }
+            
+            // Xóa nội dung và thêm con trỏ nhấp nháy
+            entry.target.textContent = '';
+            const textNode = document.createTextNode('');
+            entry.target.appendChild(textNode);
+            const cursor = document.createElement('span');
+            cursor.className = 'typewriter-cursor';
+            entry.target.appendChild(cursor);
+
+            // Gõ chữ
+            let i = 0;
+            function type() {
+              if (i < originalText.length) {
+                textNode.nodeValue += originalText.charAt(i);
+                i++;
+                setTimeout(type, 50); // Tốc độ gõ
+              }
+            }
+            setTimeout(type, 400); // Delay nhẹ trước khi gõ
+          }
         }
       }
     });
@@ -113,80 +138,112 @@ function initScrollSpy() {
 }
 
 /* ============================================
-   INK TIMELINE LOGIC (SECTION 4)
+   SECTION 3: STATE TOGGLE (PRESENTATION)
    ============================================ */
-function initInkTimeline() {
-  const section4 = document.getElementById('section-4');
-  const timelineProgress = document.getElementById('timelineProgress');
-  const items = document.querySelectorAll('.timeline-item');
-  const timelineLine = document.querySelector('.timeline-line');
+let stateRevealed = false;
 
-  if (!section4 || !timelineProgress || !timelineLine) return;
+function toggleStateView() {
+  const sceneBright = document.getElementById('sceneBright');
+  const sceneDark = document.getElementById('sceneDark');
+  const flashOverlay = document.getElementById('stateFlashOverlay');
+  const cardBright = document.getElementById('cardBright');
+  const cardDark = document.getElementById('cardDark');
+  const toggleBtn = document.getElementById('stateToggleBtn');
+  const toggleLabel = document.getElementById('stateToggleLabel');
 
-  window.addEventListener('scroll', () => {
-    const rect = section4.getBoundingClientRect();
-    const sectionTop = rect.top;
-    const windowHeight = window.innerHeight;
-
-    // Only process if section is in view
-    if (sectionTop < windowHeight && rect.bottom > 0) {
-      // Calculate how far we scrolled into the section
-      let progress = (windowHeight / 2 - sectionTop) / (rect.height);
-      progress = Math.max(0, Math.min(1, progress)); // Clamp 0-1
-
-      // Set progress line height
-      const totalHeight = timelineLine.clientHeight;
-      timelineProgress.style.height = `${progress * totalHeight}px`;
-
-      // Activate items based on progress
-      items.forEach((item, index) => {
-        const itemTop = item.offsetTop;
-        if (progress * totalHeight > itemTop - 20) {
-          item.classList.add('active');
-        } else {
-          item.classList.remove('active');
-        }
-      });
-    }
-  });
+  if (!stateRevealed) {
+    // Flash red overlay
+    flashOverlay.classList.add('flash-active');
+    setTimeout(() => {
+      // Switch scenes
+      sceneBright.classList.remove('active');
+      sceneDark.classList.add('active');
+      // Switch cards
+      cardBright.style.display = 'none';
+      cardDark.style.display = 'block';
+      cardDark.style.animation = 'cardRevealDark 0.6s ease forwards';
+      // Update button
+      toggleBtn.textContent = 'QUAY LẠI VỎ BỌC ←';
+      toggleBtn.classList.add('toggled');
+      toggleLabel.textContent = 'ĐANG HIỂN THỊ: SỰ THẬT';
+      toggleLabel.classList.add('label-red');
+      stateRevealed = true;
+    }, 300);
+    setTimeout(() => flashOverlay.classList.remove('flash-active'), 800);
+  } else {
+    // Switch back
+    sceneDark.classList.remove('active');
+    sceneBright.classList.add('active');
+    cardDark.style.display = 'none';
+    cardBright.style.display = 'block';
+    toggleBtn.textContent = 'LỘT MẶT NẠ →';
+    toggleBtn.classList.remove('toggled');
+    toggleLabel.textContent = 'ĐANG HIỂN THỊ: VỎ BỌC XÃ HỘI';
+    toggleLabel.classList.remove('label-red');
+    stateRevealed = false;
+  }
 }
 
 /* ============================================
-   DA VINCI SVG MAP (SECTION 3)
+   SECTION 4: PRESSURE COOKER (PRESENTATION)
    ============================================ */
-function initDaVinciMap() {
-  const nodes = document.querySelectorAll('.map-node');
-  const tooltip = document.getElementById('mapTooltip');
-
-  if (!tooltip) return;
-
-  // Sửa lỗi position: fixed bị giới hạn bởi transform của thẻ cha
-  document.body.appendChild(tooltip);
-
-  nodes.forEach(node => {
-    node.addEventListener('mouseenter', () => {
-      const info = node.getAttribute('data-info');
-      tooltip.innerHTML = info.replace(': ', ':<br><strong>') + '</strong>'; // Thêm chút highlight cho text
-      tooltip.classList.add('show');
-    });
-
-    node.addEventListener('mousemove', (e) => {
-      // Vị trí tooltip theo chuột
-      let left = e.clientX + 20;
-      let top = e.clientY + 20;
-      
-      // Chống tràn màn hình
-      if (left + 320 > window.innerWidth) left = e.clientX - 340;
-      
-      tooltip.style.left = left + 'px';
-      tooltip.style.top = top + 'px';
-    });
-
-    node.addEventListener('mouseleave', () => {
-      tooltip.classList.remove('show');
-    });
-  });
+function initPressureGauge() {
+  // Bỏ hiệu ứng tăng áp suất khi cuộn chuột theo yêu cầu
+  // Áp suất chỉ tăng khi click vào 2 nút điều khiển
 }
+
+/* Click: Gauge -> MAX */
+function triggerPressureMax() {
+  const gaugeFill = document.getElementById('gaugeFill');
+  const gaugeValue = document.getElementById('gaugeValue');
+  const pressureGlow = document.getElementById('pressureGlow');
+  const steamContainer = document.getElementById('steamContainer');
+  const cookerImg = document.querySelector('.pressure-cooker-img');
+
+  if (gaugeFill) {
+    gaugeFill.style.transition = 'width 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+    gaugeFill.style.width = '100%';
+  }
+  if (gaugeValue) {
+    gaugeValue.classList.add('critical');
+    // Animate percentage count
+    let count = 0;
+    const interval = setInterval(() => {
+      count += 2;
+      if (count > 100) { count = 100; clearInterval(interval); }
+      gaugeValue.textContent = 'ÁP SUẤT: ' + count + '%';
+    }, 25);
+  }
+  if (pressureGlow) pressureGlow.classList.add('active');
+  if (steamContainer) steamContainer.classList.add('active');
+  if (cookerImg) {
+    cookerImg.style.transition = 'filter 1s ease';
+    cookerImg.style.filter = 'sepia(0) contrast(1.4) brightness(1.1) saturate(1.8)';
+  }
+}
+
+/* Click: Cooker -> BURST (shake + heavy steam) */
+function triggerCookerBurst() {
+  const cookerVisual = document.getElementById('pressureCooker');
+  const steamContainer = document.getElementById('steamContainer');
+  const pressureGlow = document.getElementById('pressureGlow');
+
+  // Ensure max state
+  triggerPressureMax();
+
+  // Shake violently
+  if (cookerVisual) {
+    cookerVisual.style.animation = 'pressureShake 0.1s ease-in-out infinite';
+  }
+  // Add extra steam elements
+  if (steamContainer) {
+    steamContainer.classList.add('active', 'burst');
+  }
+  if (pressureGlow) {
+    pressureGlow.classList.add('active', 'burst');
+  }
+}
+
 
 /* ============================================
    CROSSWORD GAME LOGIC (INK STYLE)
