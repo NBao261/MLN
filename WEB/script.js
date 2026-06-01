@@ -1,398 +1,368 @@
-/* ============================================
-   SCRIPT.JS — Dark Academia × Cyberpunk
-   Scrollytelling Engine
-   ============================================ */
-
 document.addEventListener('DOMContentLoaded', () => {
-  // --- Loading Screen ---
-  const loadingScreen = document.getElementById('loadingScreen');
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      loadingScreen.classList.add('hidden');
-    }, 1800);
-  });
-  // Fallback: hide after 4 seconds no matter what
-  setTimeout(() => {
-    loadingScreen.classList.add('hidden');
-  }, 4000);
-
-  // --- Floating Particles ---
-  createParticles();
-
-  // --- Intersection Observer for Reveal Animations ---
-  initRevealAnimations();
-
-  // --- Progress Bar ---
-  initProgressBar();
-
-  // --- Navigation Dots ---
-  initNavDots();
-
-  // --- Typewriter Effect for Section 5 ---
-  initTypewriter();
-
-  // --- Voting System ---
-  initVoting();
-
-  // --- Smooth scroll for CTA button ---
-  const ctaBtn = document.getElementById('ctaBtn');
-  if (ctaBtn) {
-    ctaBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const target = document.getElementById('section-2');
-      if (target) {
-        target.scrollIntoView({ behavior: 'smooth' });
-      }
-    });
-  }
-
-  // --- Parallax on background images ---
-  initParallax();
+  initObservers();
+  initCrossword();
+  initScrollSpy();
+  initInkTimeline();
+  initDaVinciMap();
+  initRailToggle();
 });
 
-
 /* ============================================
-   PARTICLES
+   RAIL TOGGLE (SIDE NAVIGATION)
    ============================================ */
-function createParticles() {
-  const container = document.getElementById('particles');
-  if (!container) return;
+function initRailToggle() {
+  const railToggle  = document.getElementById('railToggle');
+  const chapterRail = document.getElementById('chapterRail');
+  if (!railToggle || !chapterRail) return;
 
-  const count = 30;
-  for (let i = 0; i < count; i++) {
-    const particle = document.createElement('div');
-    particle.classList.add('particle');
-    particle.style.left = Math.random() * 100 + '%';
-    particle.style.animationDuration = (8 + Math.random() * 15) + 's';
-    particle.style.animationDelay = Math.random() * 10 + 's';
-    particle.style.width = (1 + Math.random() * 2) + 'px';
-    particle.style.height = particle.style.width;
+  let hideTimer = null;
 
-    // Random color: teal or soft red for light theme
-    if (Math.random() > 0.7) {
-      particle.style.background = '#c41e1e';
-      particle.style.boxShadow = '0 0 4px rgba(196,30,30,0.2)';
-    } else {
-      particle.style.background = '#0e7490';
-      particle.style.boxShadow = '0 0 4px rgba(14,116,144,0.2)';
-    }
-
-    container.appendChild(particle);
+  function showRail() {
+    clearTimeout(hideTimer);
+    chapterRail.classList.remove('rail-hidden');
+    chapterRail.classList.add('rail-visible');
+    railToggle.classList.add('hidden');
   }
-}
 
+  function scheduleHide() {
+    hideTimer = setTimeout(() => {
+      chapterRail.classList.remove('rail-visible');
+      chapterRail.classList.add('rail-hidden');
+      railToggle.classList.remove('hidden');
+    }, 300); // delay 300ms
+  }
 
-/* ============================================
-   REVEAL ANIMATIONS (Intersection Observer)
-   ============================================ */
-function initRevealAnimations() {
-  const revealElements = document.querySelectorAll(
-    '.reveal, .reveal-left, .reveal-right, .reveal-scale, .stagger'
-  );
+  // Hover vào nút → hiện rail
+  railToggle.addEventListener('mouseenter', showRail);
 
-  const observerOptions = {
-    root: null,
-    rootMargin: '0px 0px -80px 0px',
-    threshold: 0.15
-  };
+  // Hover vào rail → giữ rail
+  chapterRail.addEventListener('mouseenter', () => clearTimeout(hideTimer));
 
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-      }
-    });
-  }, observerOptions);
+  // Rời khỏi rail → ẩn
+  chapterRail.addEventListener('mouseleave', scheduleHide);
 
-  revealElements.forEach((el) => observer.observe(el));
-}
-
-
-/* ============================================
-   PROGRESS BAR
-   ============================================ */
-function initProgressBar() {
-  const progressBar = document.getElementById('progressBar');
-  if (!progressBar) return;
-
-  window.addEventListener('scroll', () => {
-    const scrollTop = window.scrollY;
-    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-    const scrollPercent = (scrollTop / docHeight) * 100;
-    progressBar.style.width = scrollPercent + '%';
-  }, { passive: true });
-}
-
-
-/* ============================================
-   NAVIGATION DOTS
-   ============================================ */
-function initNavDots() {
-  const dots = document.querySelectorAll('.nav-dot');
-  const sections = document.querySelectorAll('.section');
-
-  // Click navigation
-  dots.forEach((dot) => {
-    dot.addEventListener('click', () => {
-      const targetId = dot.getAttribute('data-target');
-      const target = document.getElementById(targetId);
-      if (target) {
-        target.scrollIntoView({ behavior: 'smooth' });
-      }
-    });
+  // Click nút → toggle
+  railToggle.addEventListener('click', () => {
+    if (chapterRail.classList.contains('rail-hidden')) {
+      showRail();
+    } else {
+      scheduleHide();
+    }
   });
 
-  // Update active dot on scroll
-  const sectionObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
+  // Click ra ngoài → ẩn
+  document.addEventListener('click', (e) => {
+    if (!chapterRail.contains(e.target) && !railToggle.contains(e.target)) {
+      scheduleHide();
+    }
+  });
+}
+
+/* ============================================
+   INTERSECTION OBSERVERS (Fade-in, Typewriter)
+   ============================================ */
+function initObservers() {
+  const fadeEls = document.querySelectorAll('.fade-in');
+  const typewriters = document.querySelectorAll('.typewriter-classic');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
       if (entry.isIntersecting) {
-        const id = entry.target.id;
-        dots.forEach((d) => {
-          d.classList.remove('active', 'active-red');
-        });
-        const activeDot = document.querySelector(`.nav-dot[data-target="${id}"]`);
-        if (activeDot) {
-          // Use red dot for climax sections
-          if (id === 'section-5' || id === 'section-6') {
-            activeDot.classList.add('active-red');
-          } else {
-            activeDot.classList.add('active');
-          }
+        if (entry.target.classList.contains('fade-in')) {
+          entry.target.classList.add('visible');
+        }
+        if (entry.target.classList.contains('typewriter-classic')) {
+          entry.target.style.animation = 'none';
+          entry.target.offsetHeight; /* trigger reflow */
+          entry.target.style.animation = null; 
         }
       }
     });
-  }, {
-    root: null,
-    rootMargin: '-30% 0px -30% 0px',
-    threshold: 0
-  });
+  }, { threshold: 0.2 });
 
-  sections.forEach((section) => sectionObserver.observe(section));
+  fadeEls.forEach(el => observer.observe(el));
+  typewriters.forEach(el => observer.observe(el));
 }
 
-
 /* ============================================
-   TYPEWRITER EFFECT
+   SCROLLSPY (SIDE RAIL NAVIGATION)
    ============================================ */
-function initTypewriter() {
-  const textEl = document.getElementById('typewriterText');
-  if (!textEl) return;
-
-  const fullText = '"CÁCH MẠNG KHÔNG PHẢI LÀ THAY ÁO, MÀ LÀ THAY MÁU."';
-  let charIndex = 0;
-  let hasStarted = false;
-
-  const section5 = document.getElementById('section-5');
-
-  const typeObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting && !hasStarted) {
-        hasStarted = true;
-        typeChar();
-      }
-    });
-  }, { threshold: 0.3 });
-
-  typeObserver.observe(section5);
-
-  function typeChar() {
-    if (charIndex < fullText.length) {
-      textEl.textContent += fullText.charAt(charIndex);
-      charIndex++;
-      // Vary speed: slower on punctuation
-      const currentChar = fullText.charAt(charIndex - 1);
-      const delay = [',', '.', '!', '"', ':'].includes(currentChar) ? 150 : 55;
-      setTimeout(typeChar, delay);
-    }
-  }
-}
-
-
-/* ============================================
-   VOTING SYSTEM
-   ============================================ */
-function initVoting() {
-  const options = document.querySelectorAll('.vote-option');
-  const resultsDiv = document.getElementById('voteResults');
-  const countDiv = document.getElementById('voteCount');
-
-  // Load votes from localStorage
-  let votes = JSON.parse(localStorage.getItem('mlnVotes') || '{"reform":0,"coup":0,"revolution":0}');
-  let hasVoted = localStorage.getItem('mlnHasVoted') === 'true';
-
-  if (hasVoted) {
-    showResults(votes);
-  }
-
-  options.forEach((option) => {
-    option.addEventListener('click', () => {
-      if (hasVoted) return;
-
-      const vote = option.getAttribute('data-vote');
-
-      // Remove previous selection
-      options.forEach((o) => o.classList.remove('selected'));
-
-      // Select current
-      option.classList.add('selected');
-
-      // Count vote
-      votes[vote]++;
-      localStorage.setItem('mlnVotes', JSON.stringify(votes));
-      localStorage.setItem('mlnHasVoted', 'true');
-      hasVoted = true;
-
-      // Show results with animation delay
-      setTimeout(() => {
-        showResults(votes);
-      }, 500);
-    });
-  });
-
-  function showResults(v) {
-    const total = v.reform + v.coup + v.revolution;
-    if (total === 0) return;
-
-    const pReform = Math.round((v.reform / total) * 100);
-    const pCoup = Math.round((v.coup / total) * 100);
-    const pRevolution = Math.round((v.revolution / total) * 100);
-
-    // Animate vote bars
-    const reformBar = document.querySelector('.vote-option.reform .vote-bar');
-    const coupBar = document.querySelector('.vote-option.coup .vote-bar');
-    const revolutionBar = document.querySelector('.vote-option.revolution .vote-bar');
-
-    if (reformBar) reformBar.style.width = pReform + '%';
-    if (coupBar) coupBar.style.width = pCoup + '%';
-    if (revolutionBar) revolutionBar.style.width = pRevolution + '%';
-
-    // Show count
-    resultsDiv.classList.add('visible');
-    countDiv.textContent = `Tổng: ${total} phiếu · Cải lương: ${pReform}% · Đảo chính: ${pCoup}% · Cách mạng: ${pRevolution}%`;
-  }
-}
-
-
-/* ============================================
-   PARALLAX BACKGROUND
-   ============================================ */
-function initParallax() {
-  const bgs = document.querySelectorAll('.section-bg');
+function initScrollSpy() {
+  const sections = document.querySelectorAll('.section');
+  const navItems = document.querySelectorAll('.nav-item');
 
   window.addEventListener('scroll', () => {
-    const scrollY = window.scrollY;
-    bgs.forEach((bg) => {
-      const section = bg.parentElement;
-      const rect = section.getBoundingClientRect();
-      const sectionTop = rect.top + scrollY;
-      const offset = (scrollY - sectionTop) * 0.15;
-      bg.style.transform = `translateY(${offset}px) scale(1.1)`;
+    let current = '';
+    const scrollY = window.pageYOffset;
+
+    sections.forEach(section => {
+      const sectionTop = section.offsetTop;
+      const sectionHeight = section.clientHeight;
+      if (scrollY >= sectionTop - sectionHeight / 3) {
+        current = section.getAttribute('id');
+      }
     });
-  }, { passive: true });
+
+    navItems.forEach(item => {
+      item.classList.remove('active');
+      if (item.getAttribute('data-target') === current) {
+        item.classList.add('active');
+      }
+    });
+  });
 }
 
-
 /* ============================================
-   KEYBOARD NAVIGATION (Arrow Keys)
+   INK TIMELINE LOGIC (SECTION 4)
    ============================================ */
-document.addEventListener('keydown', (e) => {
-  const sections = document.querySelectorAll('.section');
-  const sectionArray = Array.from(sections);
-  
-  // Find current section in view
-  let currentIndex = 0;
-  const scrollY = window.scrollY + window.innerHeight / 2;
-  
-  sectionArray.forEach((section, index) => {
-    if (section.offsetTop <= scrollY) {
-      currentIndex = index;
+function initInkTimeline() {
+  const section4 = document.getElementById('section-4');
+  const timelineProgress = document.getElementById('timelineProgress');
+  const items = document.querySelectorAll('.timeline-item');
+  const timelineLine = document.querySelector('.timeline-line');
+
+  if (!section4 || !timelineProgress || !timelineLine) return;
+
+  window.addEventListener('scroll', () => {
+    const rect = section4.getBoundingClientRect();
+    const sectionTop = rect.top;
+    const windowHeight = window.innerHeight;
+
+    // Only process if section is in view
+    if (sectionTop < windowHeight && rect.bottom > 0) {
+      // Calculate how far we scrolled into the section
+      let progress = (windowHeight / 2 - sectionTop) / (rect.height);
+      progress = Math.max(0, Math.min(1, progress)); // Clamp 0-1
+
+      // Set progress line height
+      const totalHeight = timelineLine.clientHeight;
+      timelineProgress.style.height = `${progress * totalHeight}px`;
+
+      // Activate items based on progress
+      items.forEach((item, index) => {
+        const itemTop = item.offsetTop;
+        if (progress * totalHeight > itemTop - 20) {
+          item.classList.add('active');
+        } else {
+          item.classList.remove('active');
+        }
+      });
     }
   });
-
-  if (e.key === 'ArrowDown' || e.key === 'PageDown') {
-    e.preventDefault();
-    const next = Math.min(currentIndex + 1, sectionArray.length - 1);
-    sectionArray[next].scrollIntoView({ behavior: 'smooth' });
-  } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
-    e.preventDefault();
-    const prev = Math.max(currentIndex - 1, 0);
-    sectionArray[prev].scrollIntoView({ behavior: 'smooth' });
-  }
-});
+}
 
 /* ============================================
-   CROSSWORD GAME LOGIC (SECTION 8)
+   DA VINCI SVG MAP (SECTION 3)
    ============================================ */
-let currentRevealRow = null;
+function initDaVinciMap() {
+  const nodes = document.querySelectorAll('.map-node');
+  const tooltip = document.getElementById('mapTooltip');
 
-function openCwModal(rowNum, numText, questionText, hintText) {
-  currentRevealRow = rowNum;
-  const modal = document.getElementById('cwModal');
-  if (modal) {
-    document.getElementById('cwModalNum').textContent = numText;
-    document.getElementById('cwModalText').textContent = questionText;
-    document.getElementById('cwModalHint').textContent = hintText;
-    modal.classList.add('active');
-  }
-}
+  if (!tooltip) return;
 
-function closeCwModal() {
-  const modal = document.getElementById('cwModal');
-  if (modal) {
-    modal.classList.remove('active');
-  }
-}
+  // Sửa lỗi position: fixed bị giới hạn bởi transform của thẻ cha
+  document.body.appendChild(tooltip);
 
-function revealFromModal() {
-  if (currentRevealRow !== null) {
-    revealRow(currentRevealRow);
-    closeCwModal();
-  }
-}
-
-function revealRow(rowNum) {
-  const row = document.getElementById('cw-row-' + rowNum);
-  if (row) {
-    const cells = row.querySelectorAll('.cw-cell');
-    cells.forEach(cell => {
-      cell.classList.remove('hidden');
+  nodes.forEach(node => {
+    node.addEventListener('mouseenter', () => {
+      const info = node.getAttribute('data-info');
+      tooltip.innerHTML = info.replace(': ', ':<br><strong>') + '</strong>'; // Thêm chút highlight cho text
+      tooltip.classList.add('show');
     });
+
+    node.addEventListener('mousemove', (e) => {
+      // Vị trí tooltip theo chuột
+      let left = e.clientX + 20;
+      let top = e.clientY + 20;
+      
+      // Chống tràn màn hình
+      if (left + 320 > window.innerWidth) left = e.clientX - 340;
+      
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = top + 'px';
+    });
+
+    node.addEventListener('mouseleave', () => {
+      tooltip.classList.remove('show');
+    });
+  });
+}
+
+/* ============================================
+   CROSSWORD GAME LOGIC (INK STYLE)
+   ============================================ */
+const cwData = [
+  { answer: "GIAICAP", highlightIdx: 4, question: "Câu 1: Bản chất của Nhà nước là công cụ chuyên chính của một... thống trị?" },
+  { answer: "BAOLUC", highlightIdx: 1, question: "Câu 2: Phương pháp cách mạng tất yếu khi chính quyền cũ dùng cảnh sát Robot đàn áp?" },
+  { answer: "DAOCHINH", highlightIdx: 3, question: "Câu 3: Hành động lật đổ chính quyền nhưng không làm thay đổi bản chất chế độ bóc lột?" },
+  { answer: "HOABINH", highlightIdx: 0, question: "Câu 4: Phương pháp hiếm khi xảy ra, trừ khi giai cấp thống trị không còn bộ máy bạo lực?" },
+  { answer: "MAUTHUAN", highlightIdx: 0, question: "Câu 5: Nguyên nhân sâu xa của Cách mạng là do sự gay gắt của yếu tố này?" },
+  { answer: "NHANUOC", highlightIdx: 2, question: "Câu 6: Tổ chức có 'đội vũ trang đặc biệt' tách rời khỏi quần chúng để duy trì trật tự?" },
+  { answer: "NHANLOAI", highlightIdx: 0, question: "Câu 7: Giải phóng giai cấp là tiền đề để giải phóng toàn...?" },
+  { answer: "CAILUONG", highlightIdx: 7, question: "Câu 8: Trào lưu chỉ xoa dịu bề ngoài (như xin UBI) chứ không thay đổi quyền sở hữu?" }
+];
+
+let revealedCount = 0;
+
+function initCrossword() {
+  const board = document.getElementById('crosswordBoard');
+  if (!board) return;
+
+  const maxHighlightIdx = Math.max(...cwData.map(r => r.highlightIdx));
+
+  cwData.forEach((row, rowIndex) => {
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'cw-row';
+    rowDiv.id = `cw-row-${rowIndex}`;
+
+    const offset = maxHighlightIdx - row.highlightIdx;
+    rowDiv.style.marginLeft = `calc(${offset} * 41px)`; // 38px width + 3px gap
+
+    // Row number
+    const numDiv = document.createElement('div');
+    numDiv.className = 'cw-row-num';
+    numDiv.textContent = rowIndex + 1;
+    rowDiv.appendChild(numDiv);
+
+    const inputs = [];
+    for (let i = 0; i < row.answer.length; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cw-cell';
+      if (i === row.highlightIdx) cell.classList.add('highlight');
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.maxLength = 1;
+      input.className = 'cw-input';
+      input.dataset.row = rowIndex;
+      input.dataset.col = i;
+      
+      input.addEventListener('input', function() {
+        this.value = this.value.toUpperCase();
+        if (this.value && i < row.answer.length - 1) {
+          inputs[i + 1].focus();
+        }
+      });
+
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Backspace' && !this.value && i > 0) {
+          inputs[i - 1].focus();
+        }
+      });
+
+      input.addEventListener('focus', () => {
+        document.querySelectorAll('.cw-row').forEach(r => r.classList.remove('active-row'));
+        rowDiv.classList.add('active-row');
+        showQuestion(rowIndex, row);
+      });
+
+      cell.appendChild(input);
+      inputs.push(input);
+      rowDiv.appendChild(cell);
+    }
+
+    rowDiv.addEventListener('click', (e) => {
+      // If clicking outside an input (e.g. padding), focus the first empty input
+      if (e.target.tagName !== 'INPUT') {
+        const firstEmpty = inputs.find(inp => !inp.value && !inp.readOnly) || inputs[0];
+        firstEmpty.focus();
+      }
+    });
+
+    board.appendChild(rowDiv);
+  });
+}
+
+function showQuestion(rowIndex, rowData) {
+  const panel = document.getElementById('cwQuestionPanel');
+  const placeholder = document.getElementById('cwPlaceholder');
+
+  if (placeholder) placeholder.style.display = 'none';
+
+  // Xoá card cũ
+  const old = panel.querySelector('.cw-question-card');
+  if (old) old.remove();
+
+  const isRevealed = document.getElementById(`cw-row-${rowIndex}`).classList.contains('revealed');
+
+  const card = document.createElement('div');
+  card.className = 'cw-question-card';
+  card.innerHTML = `
+    <div class="cw-question-num">Hàng ngang số ${rowIndex + 1} · ${rowData.answer.length} ô</div>
+    <p class="cw-question-text">${rowData.question}</p>
+    <p class="cw-hint-text">${rowData.hint || ''}</p>
+    <button class="cw-reveal-answer-btn ${isRevealed ? 'done' : ''}" id="revealBtn-${rowIndex}">
+      ${isRevealed ? '✓ Đã mở' : 'Kiểm tra đáp án →'}
+    </button>
+  `;
+
+  if (!isRevealed) {
+    card.querySelector(`#revealBtn-${rowIndex}`).addEventListener('click', function() {
+      checkRowAnswer(rowIndex);
+    });
+  }
+
+  panel.appendChild(card);
+}
+
+function checkRowAnswer(rowIndex) {
+  const rowDiv = document.getElementById(`cw-row-${rowIndex}`);
+  const inputs = Array.from(rowDiv.querySelectorAll('.cw-input'));
+  const currentWord = inputs.map(inp => inp.value).join('');
+  const correctAnswer = cwData[rowIndex].answer;
+
+  if (currentWord === correctAnswer) {
+    revealRow(rowIndex);
+    const btn = document.getElementById(`revealBtn-${rowIndex}`);
+    if (btn) {
+      btn.classList.add('done');
+      btn.textContent = '✓ Đã mở';
+    }
+  } else {
+    // Sai đáp án
+    rowDiv.classList.remove('wrong');
+    void rowDiv.offsetWidth; // trigger reflow
+    rowDiv.classList.add('wrong');
+  }
+}
+
+function revealRow(rowIndex) {
+  const rowDiv = document.getElementById(`cw-row-${rowIndex}`);
+  if (!rowDiv.classList.contains('revealed')) {
+    const inputs = rowDiv.querySelectorAll('.cw-input');
+    const answer = cwData[rowIndex].answer;
+    
+    // Đổ đáp án đúng vào ô
+    inputs.forEach((inp, idx) => {
+      inp.value = answer[idx];
+      inp.readOnly = true;
+    });
+
+    rowDiv.classList.add('revealed');
+    rowDiv.classList.remove('active-row', 'wrong');
+
+    revealedCount++;
+    const rc = document.getElementById('revealCount');
+    if (rc) rc.textContent = revealedCount;
   }
 }
 
 function revealKeyword() {
-  const highlightCells = document.querySelectorAll('.cw-cell.highlight');
-  highlightCells.forEach(cell => {
-    cell.classList.remove('hidden');
+  cwData.forEach((row, rowIndex) => {
+    const rowDiv = document.getElementById(`cw-row-${rowIndex}`);
+    if (rowDiv && !rowDiv.classList.contains('revealed')) {
+      const inputs = rowDiv.querySelectorAll('.cw-input');
+      const hIdx = row.highlightIdx;
+      if (inputs[hIdx]) {
+        inputs[hIdx].value = row.answer[hIdx];
+        inputs[hIdx].readOnly = true;
+        // Có thể thêm 1 class mờ mờ cho ô đã lộ từ khoá
+        inputs[hIdx].parentElement.style.background = 'rgba(139,26,26,0.15)';
+      }
+    }
   });
 }
 
 function revealAll() {
-  const allCells = document.querySelectorAll('.cw-cell');
-  allCells.forEach(cell => {
-    cell.classList.remove('hidden');
-  });
+  cwData.forEach((row, i) => revealRow(i));
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-  // Attach click listeners to all question cards for modal popup
-  const cards = document.querySelectorAll('.cw-q-card');
-  cards.forEach((card, index) => {
-    const rowNum = index + 1;
-    card.addEventListener('click', () => {
-      const numText = card.querySelector('.cw-q-num').innerText;
-      const questionText = card.querySelector('p').innerText;
-      const hintText = card.querySelector('.cw-hint').innerText;
-      openCwModal(rowNum, numText, questionText, hintText);
-    });
-    // Prevent the "Mở ô chữ" inner button from opening the modal if clicked directly
-    const btn = card.querySelector('.cw-reveal-btn');
-    if (btn) {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        revealRow(rowNum);
-      });
-    }
-  });
-});
-
