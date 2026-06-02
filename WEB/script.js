@@ -423,3 +423,47 @@ function revealKeyword() {
 function revealAll() {
   cwData.forEach((row, i) => revealRow(i));
 }
+
+/* ============================================
+   SECTION 7 CAROUSEL
+   ============================================ */
+function moveCarousel(direction) {
+  const track = document.getElementById('sCarouselTrack');
+  const thumbs = track.querySelectorAll('.thumb');
+  let activeIndex = -1;
+  thumbs.forEach((t, i) => {
+    if (t.classList.contains('active')) activeIndex = i;
+  });
+  
+  if (activeIndex > -1) {
+    thumbs[activeIndex].classList.remove('active');
+    let nextIndex = (activeIndex + direction + thumbs.length) % thumbs.length;
+    thumbs[nextIndex].classList.add('active');
+    
+    // Optional: Update main image source if needed
+    const mainImg = document.querySelector('.main-statue');
+    if(mainImg) {
+      // In a real app, you might map the thumbnails to main images.
+      // Here, we just keep the main image or apply a slight animation
+      mainImg.style.opacity = 0;
+      setTimeout(() => {
+        mainImg.style.opacity = 1;
+      }, 300);
+    }
+  }
+}
+
+function setActiveThumb(el) {
+  const track = document.getElementById('sCarouselTrack');
+  const thumbs = track.querySelectorAll('.thumb');
+  thumbs.forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  
+  const mainImg = document.querySelector('.main-statue');
+  if(mainImg) {
+    mainImg.style.opacity = 0;
+    setTimeout(() => {
+      mainImg.style.opacity = 1;
+    }, 300);
+  }
+}
