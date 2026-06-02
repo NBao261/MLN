@@ -404,24 +404,60 @@ function revealRow(rowIndex) {
   }
 }
 
-function revealKeyword() {
-  cwData.forEach((row, rowIndex) => {
-    const rowDiv = document.getElementById(`cw-row-${rowIndex}`);
-    if (rowDiv && !rowDiv.classList.contains('revealed')) {
-      const inputs = rowDiv.querySelectorAll('.cw-input');
-      const hIdx = row.highlightIdx;
-      if (inputs[hIdx]) {
-        inputs[hIdx].value = row.answer[hIdx];
-        inputs[hIdx].readOnly = true;
-        // Có thể thêm 1 class mờ mờ cho ô đã lộ từ khoá
-        inputs[hIdx].parentElement.style.background = 'rgba(139,26,26,0.15)';
-      }
-    }
-  });
-}
-
 function revealAll() {
   cwData.forEach((row, i) => revealRow(i));
+}
+
+function revealNextLine() {
+  // Tìm dòng đang active
+  const activeRow = document.querySelector('.cw-row.active-row');
+  if (activeRow && !activeRow.classList.contains('revealed')) {
+    const idx = parseInt(activeRow.id.replace('cw-row-', ''), 10);
+    revealRow(idx);
+    showQuestion(idx, cwData[idx]);
+    return;
+  }
+
+  // Nếu không có dòng active hoặc dòng active đã được mở, mở theo thứ tự
+  for (let i = 0; i < cwData.length; i++) {
+    const rowDiv = document.getElementById(`cw-row-${i}`);
+    if (rowDiv && !rowDiv.classList.contains('revealed')) {
+      revealRow(i);
+      showQuestion(i, cwData[i]);
+      document.querySelectorAll('.cw-row').forEach(r => r.classList.remove('active-row'));
+      rowDiv.classList.add('active-row');
+      break;
+    }
+  }
+}
+
+function hideAll() {
+  cwData.forEach((row, i) => {
+    const rowDiv = document.getElementById(`cw-row-${i}`);
+    if (rowDiv) {
+      rowDiv.classList.remove('revealed', 'active-row', 'wrong');
+      const inputs = rowDiv.querySelectorAll('.cw-input');
+      inputs.forEach((inp, idx) => {
+        inp.value = '';
+        inp.readOnly = false;
+        // Xoá highlight của từ khoá dọc nếu có
+        if (inp.parentElement.style.background) {
+          inp.parentElement.style.background = '';
+        }
+      });
+    }
+  });
+
+  revealedCount = 0;
+  const rc = document.getElementById('revealCount');
+  if (rc) rc.textContent = revealedCount;
+
+  // Reset bảng câu hỏi
+  const panel = document.getElementById('cwQuestionPanel');
+  const placeholder = document.getElementById('cwPlaceholder');
+  if (placeholder) placeholder.style.display = 'block';
+  const oldCard = panel.querySelector('.cw-question-card');
+  if (oldCard) oldCard.remove();
 }
 
 /* ============================================
